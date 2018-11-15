@@ -7,7 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/sinbad/lfs-folderstore/api"
 	"github.com/sinbad/lfs-folderstore/util"
@@ -54,9 +54,9 @@ func Serve(baseDir string, stdin io.Reader, stdout, stderr io.Writer) {
 
 func storagePath(baseDir string, oid string) string {
 	// Use same folder split as lfs itself
-	fld := path.Join(baseDir, oid[0:2], oid[2:4])
+	fld := filepath.Join(baseDir, oid[0:2], oid[2:4])
 	os.MkdirAll(fld, os.ModePerm)
-	return path.Join(fld, oid)
+	return filepath.Join(fld, oid)
 }
 
 func retrieve(baseDir string, oid string, size int64, a *api.Action, writer, errWriter *bufio.Writer) {
