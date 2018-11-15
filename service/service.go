@@ -112,7 +112,7 @@ func retrieve(baseDir string, oid string, size int64, a *api.Action, writer, err
 	}
 
 	// completed
-	complete := &api.TransferResponse{"complete", oid, dlfilename, nil}
+	complete := &api.TransferResponse{Event: "complete", Oid: oid, Path: dlfilename, Error: nil}
 	err = api.SendResponse(complete, writer, errWriter)
 	if err != nil {
 		util.WriteToStderr(fmt.Sprintf("Unable to send completion message: %v\n", err), errWriter)
@@ -162,7 +162,7 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 			// send full progress
 			api.SendProgress(oid, statFrom.Size(), int(statFrom.Size()), writer, errWriter)
 			// send completion
-			complete := &api.TransferResponse{"complete", oid, "", nil}
+			complete := &api.TransferResponse{Event: "complete", Oid: oid, Error: nil}
 			err = api.SendResponse(complete, writer, errWriter)
 			if err != nil {
 				util.WriteToStderr(fmt.Sprintf("Unable to send completion message: %v\n", err), errWriter)
@@ -228,7 +228,7 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 	}
 
 	// completed
-	complete := &api.TransferResponse{"complete", oid, "", nil}
+	complete := &api.TransferResponse{Event: "complete", Oid: oid, Error: nil}
 	err = api.SendResponse(complete, writer, errWriter)
 	if err != nil {
 		util.WriteToStderr(fmt.Sprintf("Unable to send completion message: %v\n", err), errWriter)
