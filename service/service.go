@@ -14,11 +14,11 @@ import (
 )
 
 // Serve starts the protocol server
-func Serve(baseDir string) {
+func Serve(baseDir string, stdin io.Reader, stdout, stderr io.Writer) {
 
-	scanner := bufio.NewScanner(os.Stdin)
-	writer := bufio.NewWriter(os.Stdout)
-	errWriter := bufio.NewWriter(os.Stderr)
+	scanner := bufio.NewScanner(stdin)
+	writer := bufio.NewWriter(stdout)
+	errWriter := bufio.NewWriter(stderr)
 
 	for scanner.Scan() {
 		line := scanner.Text()
