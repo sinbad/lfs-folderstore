@@ -98,15 +98,18 @@ func TestUpload(t *testing.T) {
 	// Perform entire sequence
 	Serve(setup.remotepath, bytes.NewReader(setup.inputBuffer.Bytes()), &stdout, &stderr)
 
-	os.Stdout.WriteString("stdout: ")
-	os.Stdout.Write(stdout.Bytes())
+	// Check reported progress and completion
+	stdoutStr := stdout.String()
+	// init report
+	assert.Contains(t, stdoutStr, "{}")
+	// progress & completion for each file (only 2 uploaded)
+	for _, file := range setup.files {
+		assert.Contains(t, stdoutStr, `{"event":"progress","oid":"`+file.oid)
+		assert.Contains(t, stdoutStr, `{"event":"complete","oid":"`+file.oid)
+	}
 
-	os.Stdout.WriteString("stderr: ")
-	os.Stdout.Write(stderr.Bytes())
-
-	// Check both files
-	for i := 0; i < 2; i++ {
-		file := setup.files[i]
+	// Check actual files are there
+	for _, file := range setup.files {
 		expectedPath := filepath.Join(setup.remotepath, file.oid[0:2], file.oid[2:4], file.oid)
 		assert.FileExistsf(t, expectedPath, "Store file must exist: %v", expectedPath)
 
@@ -119,7 +122,7 @@ func TestUpload(t *testing.T) {
 		assert.Equal(t, file.oid, oid)
 	}
 
-	// Now try to perform an upload with files 2 & 3 - only one is new
+	// Now try to perform an upload with files 3 & 4 - only one is new
 	// TODO
 
 }
@@ -139,15 +142,18 @@ func TestUploadNoLinking(t *testing.T) {
 	// Perform entire sequence
 	Serve(setup.remotepath, bytes.NewReader(setup.inputBuffer.Bytes()), &stdout, &stderr)
 
-	os.Stdout.WriteString("stdout: ")
-	os.Stdout.Write(stdout.Bytes())
-
-	os.Stdout.WriteString("stderr: ")
-	os.Stdout.Write(stderr.Bytes())
+	// Check reported progress and completion
+	stdoutStr := stdout.String()
+	// init report
+	assert.Contains(t, stdoutStr, "{}")
+	// progress & completion for each file (only 2 uploaded)
+	for _, file := range setup.files {
+		assert.Contains(t, stdoutStr, `{"event":"progress","oid":"`+file.oid)
+		assert.Contains(t, stdoutStr, `{"event":"complete","oid":"`+file.oid)
+	}
 
 	// Check both files
-	for i := 0; i < 2; i++ {
-		file := setup.files[i]
+	for _, file := range setup.files {
 		expectedPath := filepath.Join(setup.remotepath, file.oid[0:2], file.oid[2:4], file.oid)
 		assert.FileExistsf(t, expectedPath, "Store file must exist: %v", expectedPath)
 
@@ -206,8 +212,7 @@ func setupUploadTest(t *testing.T) *testSetup {
 	var commandBuf bytes.Buffer
 	initUpload(&commandBuf)
 
-	for i := 0; i < 2; i++ {
-		file := testfiles[i]
+	for _, file := range testfiles {
 		addUpload(t, &commandBuf, file.path, file.oid, file.size)
 	}
 
