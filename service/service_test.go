@@ -72,6 +72,8 @@ func addUpload(t *testing.T, buf *bytes.Buffer, path, oid string, size int64) {
 	b, err := json.Marshal(req)
 	assert.Nil(t, err)
 	b = append(b, '\n')
+
+	buf.Write(b)
 }
 
 func initUpload(buf *bytes.Buffer) {
