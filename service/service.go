@@ -13,6 +13,10 @@ import (
 	"github.com/sinbad/lfs-folderstore/util"
 )
 
+var (
+	disableHardLinking bool
+)
+
 // Serve starts the protocol server
 func Serve(baseDir string, stdin io.Reader, stdout, stderr io.Writer) {
 
@@ -171,13 +175,16 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 		}
 	}
 
-	// Firstly, attempt a hard link
-	// This is most efficient if destination is the same volume & supported
-	// (e.g. Mac/Linux, NTFS on Windows), saves space & safe (refcounted)
-	err = os.Link(fromPath, destPath)
-	if err != nil {
-		// Link didn't work, we have to copy manually
-
+	linked := false
+	if !disableHardLinking {
+		// Firstly, attempt a hard link
+		// This is most efficient if destination is the same volume & supported
+		// (e.g. Mac/Linux, NTFS on Windows), saves space & safe (refcounted)
+		linked = os.Link(fromPath, destPath) == nil
+	}
+	if !linked {
+		// Linking disabled or failed (different volumes, wrong filesystem)
+		// So copy the old-fashioned way
 		// write a temp file in same folder, then rename
 		tempPath := fmt.Sprintf("%v.tmp", destPath)
 		if _, err := os.Stat(tempPath); err != nil {
