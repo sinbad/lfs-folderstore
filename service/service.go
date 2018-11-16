@@ -190,7 +190,7 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 		if _, err := os.Stat(tempPath); err != nil {
 			// delete temp file
 			err := os.Remove(tempPath)
-			if err != nil {
+			if err != nil && !os.IsNotExist(err) {
 				api.SendTransferError(oid, 14, fmt.Sprintf("Cannot remove existing temp file %q: %v", tempPath, err), writer, errWriter)
 				return
 			}
