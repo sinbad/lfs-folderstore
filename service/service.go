@@ -187,7 +187,7 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 		// So copy the old-fashioned way
 		// write a temp file in same folder, then rename
 		tempPath := fmt.Sprintf("%v.tmp", destPath)
-		if _, err := os.Stat(tempPath); err != nil {
+		if _, err := os.Stat(tempPath); err == nil {
 			// delete temp file
 			err := os.Remove(tempPath)
 			if err != nil && !os.IsNotExist(err) {
