@@ -137,7 +137,8 @@ func copyFileContents(size int64, src, dst *os.File, cb copyCallback) error {
 			nextBlock = bytesLeft
 		}
 		n, err := io.CopyN(dst, src, nextBlock)
-		if err != nil {
+		bytesLeft -= n
+		if err != nil && err != io.EOF {
 			return err
 		}
 		readSoFar := size - bytesLeft
