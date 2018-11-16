@@ -182,6 +182,10 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 		// This is most efficient if destination is the same volume & supported
 		// (e.g. Mac/Linux, NTFS on Windows), saves space & safe (refcounted)
 		linked = os.Link(fromPath, destPath) == nil
+		if linked {
+			// send full progress
+			api.SendProgress(oid, statFrom.Size(), int(statFrom.Size()), writer, errWriter)
+		}
 	}
 	if !linked {
 		// Linking disabled or failed (different volumes, wrong filesystem)
