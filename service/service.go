@@ -172,8 +172,12 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 		}
 	}
 
-	// Linking disabled or failed (different volumes, wrong filesystem)
-	// So copy the old-fashioned way
+	err = os.MkdirAll(filepath.Dir(destPath), 755)
+	if err != nil {
+		api.SendTransferError(oid, 14, fmt.Sprintf("Cannot create dir %q: %v", filepath.Dir(destPath), err), writer, errWriter)
+		return
+	}
+
 	// write a temp file in same folder, then rename
 	tempPath := fmt.Sprintf("%v.tmp", destPath)
 	if _, err := os.Stat(tempPath); err == nil {
