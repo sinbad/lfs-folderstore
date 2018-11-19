@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sinbad/lfs-folderstore/service"
 	"github.com/spf13/cobra"
@@ -79,5 +80,6 @@ Note:
 }
 
 func rootCommand(cmd *cobra.Command, args []string) {
+	baseDir = strings.TrimSpace(baseDir)
 	service.Serve(baseDir, os.Stdin, os.Stdout, os.Stderr)
 }
