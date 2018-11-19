@@ -123,7 +123,36 @@ func TestUpload(t *testing.T) {
 	}
 
 	// Now try to perform an upload with files 3 & 4 - only one is new
-	// TODO
+	setup2 := setupUploadTest2(t, setup.localpath, setup.remotepath)
+	stdout.Reset()
+	stderr.Reset()
+	Serve(setup2.remotepath, bytes.NewReader(setup2.inputBuffer.Bytes()), &stdout, &stderr)
+
+	stdoutStr = stdout.String()
+	stderrStr := stderr.String()
+
+	// First file should not be updated (is file3 in original)
+	assert.Contains(t, stderrStr, "Skipping "+setup2.files[0].oid)
+
+	// Make sure second file was uploaded
+	for _, file := range setup2.files {
+		assert.Contains(t, stdoutStr, `{"event":"progress","oid":"`+file.oid)
+		assert.Contains(t, stdoutStr, `{"event":"complete","oid":"`+file.oid)
+	}
+
+	// Check actual files are there
+	for _, file := range setup2.files {
+		expectedPath := filepath.Join(setup.remotepath, file.oid[0:2], file.oid[2:4], file.oid)
+		assert.FileExistsf(t, expectedPath, "Store file must exist: %v", expectedPath)
+
+		// Check size of file
+		s, _ := os.Stat(expectedPath)
+		assert.Equal(t, file.size, s.Size())
+
+		// Re-calculate hash to verify
+		oid := calculateFileHash(t, expectedPath)
+		assert.Equal(t, file.oid, oid)
+	}
 
 }
 
@@ -207,6 +236,41 @@ func setupUploadTest(t *testing.T) *testSetup {
 		// note must reindex since file is by value
 		testfiles[i].oid = createTestFile(t, file.size, file.path)
 	}
+
+	// Construct an input buffer of commands to upload first 2 files
+	var commandBuf bytes.Buffer
+	initUpload(&commandBuf)
+
+	for _, file := range testfiles {
+		addUpload(t, &commandBuf, file.path, file.oid, file.size)
+	}
+
+	finishUpload(&commandBuf)
+
+	return &testSetup{
+		localpath:   gitpath,
+		remotepath:  storepath,
+		files:       testfiles,
+		inputBuffer: &commandBuf,
+	}
+
+}
+
+func setupUploadTest2(t *testing.T, gitpath, storepath string) *testSetup {
+
+	testfiles := []testFile{
+		{ // File 3 again
+			path: filepath.Join(gitpath, "file3"),
+			size: 4*1024*16*6 + 345,
+		},
+		{ // File 3 again
+			path: filepath.Join(gitpath, "file4"),
+			size: 4*1024*16*2 + 1020,
+		},
+	}
+
+	testfiles[0].oid = calculateFileHash(t, testfiles[0].path)
+	testfiles[1].oid = createTestFile(t, testfiles[1].size, testfiles[1].path)
 
 	// Construct an input buffer of commands to upload first 2 files
 	var commandBuf bytes.Buffer
