@@ -30,7 +30,8 @@ import (
 )
 
 var (
-	baseDir string
+	baseDir      string
+	printVersion bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -57,6 +58,7 @@ func init() {
 	}
 
 	RootCmd.Flags().StringVarP(&baseDir, "basedir", "d", "", "Base directory for all file operations")
+	RootCmd.Flags().BoolVarP(&printVersion, "version", "", false, "Print version")
 	RootCmd.SetUsageFunc(usageCommand)
 
 }
@@ -68,6 +70,7 @@ Usage:
 
 Options:
   -d, --basedir string   Base directory for the object store
+  --version 			 Report the version number and exit
 
 Note:
   This tool should only be called by git-lfs as documented in Custom Transfers:
@@ -80,6 +83,11 @@ Note:
 }
 
 func rootCommand(cmd *cobra.Command, args []string) {
+
+	if printVersion {
+		os.Stdout.WriteString(fmt.Sprintf("lfs-folder %v", Version))
+		os.Exit(0)
+	}
 	baseDir = strings.TrimSpace(baseDir)
 	service.Serve(baseDir, os.Stdin, os.Stdout, os.Stderr)
 }
