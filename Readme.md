@@ -2,10 +2,10 @@
 
 ## What is it?
 
-`lfs-folderstore` is a Git LFS [Custom Transfer Agent]
-(https://github.com/git-lfs/git-lfs/blob/master/docs/custom-transfers.md) which
-allows you to use a plain folder as the remote storage location for all your
-large media files.
+`lfs-folderstore` is a [Custom Transfer
+Agent](https://github.com/git-lfs/git-lfs/blob/master/docs/custom-transfers.md)
+for [Git LFS](https://git-lfs.github.com/) which allows you to use a plain
+folder as the remote storage location for all your large media files.
 
 ## Why?
 
