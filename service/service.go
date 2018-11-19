@@ -13,10 +13,6 @@ import (
 	"github.com/sinbad/lfs-folderstore/util"
 )
 
-var (
-	disableHardLinking bool
-)
-
 // Serve starts the protocol server
 func Serve(baseDir string, stdin io.Reader, stdout, stderr io.Writer) {
 
@@ -176,67 +172,53 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 		}
 	}
 
-	linked := false
-	if !disableHardLinking {
-		// Firstly, attempt a hard link
-		// This is most efficient if destination is the same volume & supported
-		// (e.g. Mac/Linux, NTFS on Windows), saves space & safe (refcounted)
-		linked = os.Link(fromPath, destPath) == nil
-		if linked {
-			// send full progress
-			api.SendProgress(oid, statFrom.Size(), int(statFrom.Size()), writer, errWriter)
+	// Linking disabled or failed (different volumes, wrong filesystem)
+	// So copy the old-fashioned way
+	// write a temp file in same folder, then rename
+	tempPath := fmt.Sprintf("%v.tmp", destPath)
+	if _, err := os.Stat(tempPath); err == nil {
+		// delete temp file
+		err := os.Remove(tempPath)
+		if err != nil && !os.IsNotExist(err) {
+			api.SendTransferError(oid, 14, fmt.Sprintf("Cannot remove existing temp file %q: %v", tempPath, err), writer, errWriter)
+			return
 		}
 	}
-	if !linked {
-		// Linking disabled or failed (different volumes, wrong filesystem)
-		// So copy the old-fashioned way
-		// write a temp file in same folder, then rename
-		tempPath := fmt.Sprintf("%v.tmp", destPath)
-		if _, err := os.Stat(tempPath); err == nil {
-			// delete temp file
-			err := os.Remove(tempPath)
-			if err != nil && !os.IsNotExist(err) {
-				api.SendTransferError(oid, 14, fmt.Sprintf("Cannot remove existing temp file %q: %v", tempPath, err), writer, errWriter)
-				return
-			}
-		}
 
-		srcf, err := os.OpenFile(fromPath, os.O_RDONLY, 0644)
-		if err != nil {
-			api.SendTransferError(oid, 15, fmt.Sprintf("Cannot read data from %q: %v", fromPath, err), writer, errWriter)
-			return
-		}
-		defer srcf.Close()
+	srcf, err := os.OpenFile(fromPath, os.O_RDONLY, 0644)
+	if err != nil {
+		api.SendTransferError(oid, 15, fmt.Sprintf("Cannot read data from %q: %v", fromPath, err), writer, errWriter)
+		return
+	}
+	defer srcf.Close()
 
-		dstf, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, statFrom.Mode())
-		if err != nil {
-			api.SendTransferError(oid, 16, fmt.Sprintf("Cannot open temp file for writing %q: %v", tempPath, err), writer, errWriter)
-			return
-		}
-		defer dstf.Close()
+	dstf, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, statFrom.Mode())
+	if err != nil {
+		api.SendTransferError(oid, 16, fmt.Sprintf("Cannot open temp file for writing %q: %v", tempPath, err), writer, errWriter)
+		return
+	}
+	defer dstf.Close()
 
-		cb := func(totalSize, readSoFar int64, readSinceLast int) error {
-			api.SendProgress(oid, readSoFar, readSinceLast, writer, errWriter)
-			return nil
-		}
+	cb := func(totalSize, readSoFar int64, readSinceLast int) error {
+		api.SendProgress(oid, readSoFar, readSinceLast, writer, errWriter)
+		return nil
+	}
 
-		err = copyFileContents(statFrom.Size(), srcf, dstf, cb)
-		if err != nil {
-			api.SendTransferError(oid, 17, fmt.Sprintf("Error writing temp file %q: %v", tempPath, err), writer, errWriter)
-			dstf.Close()
-			os.Remove(tempPath)
-			return
-		}
-
-		// now rename
+	err = copyFileContents(statFrom.Size(), srcf, dstf, cb)
+	if err != nil {
+		api.SendTransferError(oid, 17, fmt.Sprintf("Error writing temp file %q: %v", tempPath, err), writer, errWriter)
 		dstf.Close()
-		err = os.Rename(tempPath, destPath)
-		if err != nil {
-			api.SendTransferError(oid, 18, fmt.Sprintf("Error moving temp file to final location: %v", err), writer, errWriter)
-			os.Remove(tempPath)
-			return
-		}
+		os.Remove(tempPath)
+		return
+	}
 
+	// now rename
+	dstf.Close()
+	err = os.Rename(tempPath, destPath)
+	if err != nil {
+		api.SendTransferError(oid, 18, fmt.Sprintf("Error moving temp file to final location: %v", err), writer, errWriter)
+		os.Remove(tempPath)
+		return
 	}
 
 	// completed

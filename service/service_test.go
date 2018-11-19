@@ -156,47 +156,6 @@ func TestUpload(t *testing.T) {
 
 }
 
-func TestUploadNoLinking(t *testing.T) {
-	// bit of a hack, but force no hard linking to make sure we test real copy
-	disableHardLinking = true
-	defer func() { disableHardLinking = false }()
-
-	setup := setupUploadTest(t)
-	defer os.RemoveAll(setup.localpath)
-	defer os.RemoveAll(setup.remotepath)
-
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	// Perform entire sequence
-	Serve(setup.remotepath, bytes.NewReader(setup.inputBuffer.Bytes()), &stdout, &stderr)
-
-	// Check reported progress and completion
-	stdoutStr := stdout.String()
-	// init report
-	assert.Contains(t, stdoutStr, "{}")
-	// progress & completion for each file (only 2 uploaded)
-	for _, file := range setup.files {
-		assert.Contains(t, stdoutStr, `{"event":"progress","oid":"`+file.oid)
-		assert.Contains(t, stdoutStr, `{"event":"complete","oid":"`+file.oid)
-	}
-
-	// Check both files
-	for _, file := range setup.files {
-		expectedPath := filepath.Join(setup.remotepath, file.oid[0:2], file.oid[2:4], file.oid)
-		assert.FileExistsf(t, expectedPath, "Store file must exist: %v", expectedPath)
-
-		// Check size of file
-		s, _ := os.Stat(expectedPath)
-		assert.Equal(t, file.size, s.Size())
-
-		// Re-calculate hash to verify
-		oid := calculateFileHash(t, expectedPath)
-		assert.Equal(t, file.oid, oid)
-	}
-
-}
-
 type testFile struct {
 	path string
 	size int64
