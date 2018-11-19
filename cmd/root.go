@@ -79,11 +79,5 @@ Note:
 }
 
 func rootCommand(cmd *cobra.Command, args []string) {
-	var baseDir string
-
-	if len(args) > 0 {
-		baseDir = args[0]
-	}
 	service.Serve(baseDir, os.Stdin, os.Stdout, os.Stderr)
-
 }
