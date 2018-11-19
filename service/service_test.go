@@ -211,10 +211,10 @@ type testSetup struct {
 
 func setupUploadTest(t *testing.T) *testSetup {
 	// Create 2 temporary dirs, pretending to be git repo and dest shared folder
-	gitpath, err := ioutil.TempDir(os.TempDir(), "lfs-folderstore-test-src")
+	gitpath, err := ioutil.TempDir(os.TempDir(), "lfs-folderstore-test-local")
 	assert.Nil(t, err, "Error creating temp git path")
 
-	storepath, err := ioutil.TempDir(os.TempDir(), "lfs-folderstore-test-dest")
+	storepath, err := ioutil.TempDir(os.TempDir(), "lfs-folderstore-test-remote")
 	assert.Nil(t, err, "Error creating temp shared path")
 
 	testfiles := []testFile{
@@ -281,6 +281,123 @@ func setupUploadTest2(t *testing.T, gitpath, storepath string) *testSetup {
 	}
 
 	finishUpload(&commandBuf)
+
+	return &testSetup{
+		localpath:   gitpath,
+		remotepath:  storepath,
+		files:       testfiles,
+		inputBuffer: &commandBuf,
+	}
+
+}
+
+func TestDownload(t *testing.T) {
+	setup := setupDownloadTest(t)
+	defer os.RemoveAll(setup.localpath)
+	defer os.RemoveAll(setup.remotepath)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	// Perform entire sequence
+	Serve(setup.remotepath, bytes.NewReader(setup.inputBuffer.Bytes()), &stdout, &stderr)
+
+	// Check reported progress and completion
+	stdoutStr := stdout.String()
+	// init report
+	assert.Contains(t, stdoutStr, "{}")
+	// progress & completion for each file (only 2 Downloaded)
+	for _, file := range setup.files {
+		assert.Contains(t, stdoutStr, `{"event":"progress","oid":"`+file.oid)
+		assert.Contains(t, stdoutStr, `{"event":"complete","oid":"`+file.oid)
+	}
+
+	// Check actual files are in the path specified
+	// NB: won't be in the local store, because git-lfs moves into that location
+	for _, file := range setup.files {
+		assert.FileExistsf(t, file.path, "Local file must exist: %v", file.path)
+
+		// Check size of file
+		s, _ := os.Stat(file.path)
+		assert.Equal(t, file.size, s.Size())
+
+		// Re-calculate hash to verify
+		oid := calculateFileHash(t, file.path)
+		assert.Equal(t, file.oid, oid)
+	}
+
+	// No need to test partial download since git-lfs eliminates those,
+	// custom adapter has no way to know what's in the local repo
+
+}
+
+func addDownload(t *testing.T, buf *bytes.Buffer, oid string, size int64) {
+	req := &api.Request{
+		Event:  "download",
+		Oid:    oid,
+		Size:   size,
+		Action: &api.Action{},
+	}
+	b, err := json.Marshal(req)
+	assert.Nil(t, err)
+	b = append(b, '\n')
+
+	buf.Write(b)
+}
+
+func initDownload(buf *bytes.Buffer) {
+	buf.WriteString(`{ "event": "init", "operation": "download", "remote": "origin", "concurrent": true, "concurrenttransfers": 3 }`)
+	buf.WriteString("\n")
+}
+
+func finishDownload(buf *bytes.Buffer) {
+	buf.WriteString(`{ "event": "terminate" }`)
+	buf.WriteString("\n")
+}
+
+func setupDownloadTest(t *testing.T) *testSetup {
+	// Create 2 temporary dirs, pretending to be git repo and dest shared folder
+	gitpath, err := ioutil.TempDir(os.TempDir(), "lfs-folderstore-test-local")
+	assert.Nil(t, err, "Error creating temp git path")
+
+	storepath, err := ioutil.TempDir(os.TempDir(), "lfs-folderstore-test-remote")
+	assert.Nil(t, err, "Error creating temp shared path")
+
+	testfiles := []testFile{
+		{ // small file
+			path: filepath.Join(storepath, "file6"),
+			size: 1023,
+		},
+		{ // Multiple block file
+			path: filepath.Join(storepath, "file7"),
+			size: 4 * 1024 * 16 * 10,
+		},
+		{ // Multiple block file with remainder
+			path: filepath.Join(storepath, "file8"),
+			size: 4*1024*16*12 + 456,
+		},
+	}
+
+	for i, file := range testfiles {
+		oid := createTestFile(t, file.size, file.path)
+		// move these to final location
+		finalLocation := filepath.Join(storepath, oid[0:2], oid[2:4], oid)
+		assert.Nil(t, os.MkdirAll(filepath.Dir(finalLocation), 644))
+		assert.Nil(t, os.Rename(file.path, finalLocation))
+		// Must re-index since file is byval
+		testfiles[i].path = finalLocation
+		testfiles[i].oid = oid
+	}
+
+	// Construct an input buffer of commands to upload first 2 files
+	var commandBuf bytes.Buffer
+	initDownload(&commandBuf)
+
+	for _, file := range testfiles {
+		addDownload(t, &commandBuf, file.oid, file.size)
+	}
+
+	finishDownload(&commandBuf)
 
 	return &testSetup{
 		localpath:   gitpath,
