@@ -172,7 +172,7 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 		}
 	}
 
-	err = os.MkdirAll(filepath.Dir(destPath), 755)
+	err = os.MkdirAll(filepath.Dir(destPath), 0755)
 	if err != nil {
 		api.SendTransferError(oid, 14, fmt.Sprintf("Cannot create dir %q: %v", filepath.Dir(destPath), err), writer, errWriter)
 		return
