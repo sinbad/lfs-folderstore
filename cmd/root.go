@@ -66,11 +66,13 @@ func init() {
 func usageCommand(cmd *cobra.Command) error {
 	usage := `
 Usage:
-  lfs-folderstore [options]
+  lfs-folderstore [options] <basedir>
+
+Arguments:
+  basedir      Base directory for the object store (required)
 
 Options:
-  -d, --basedir string   Base directory for the object store
-  --version 			 Report the version number and exit
+  --version    Report the version number and exit
 
 Note:
   This tool should only be called by git-lfs as documented in Custom Transfers:
@@ -85,9 +87,23 @@ Note:
 func rootCommand(cmd *cobra.Command, args []string) {
 
 	if printVersion {
-		os.Stdout.WriteString(fmt.Sprintf("lfs-folder %v", Version))
+		os.Stderr.WriteString(fmt.Sprintf("lfs-folder %v", Version))
 		os.Exit(0)
 	}
-	baseDir = strings.TrimSpace(baseDir)
+	var baseDir string
+	if len(args) > 0 {
+		baseDir = strings.TrimSpace(args[0])
+	}
+	if len(baseDir) == 0 {
+		os.Stderr.WriteString("Required: base directory")
+		cmd.Usage()
+		os.Exit(1)
+	}
+	stat, err := os.Stat(baseDir)
+	if err != nil || !stat.IsDir() {
+		os.Stderr.WriteString(fmt.Sprintf("%q does not exist or is not a directory", baseDir))
+		cmd.Usage()
+		os.Exit(3)
+	}
 	service.Serve(baseDir, os.Stdin, os.Stdout, os.Stderr)
 }
