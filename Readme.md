@@ -43,7 +43,7 @@ Starting a new repository is the easiest case.
 * Create some commits with LFS binaries
 * Add your plain git remote using `git remote add origin <url>`
 * Run these commands to configure your LFS folder:
-  * `git config --add lfs.customtransfer.lfs-folder.path lfs-folder`
+  * `git config --add lfs.customtransfer.lfs-folder.path lfs-folderstore`
   * `git config --add lfs.customtransfer.lfs-folder.args "C:/path/to/your/folder"`
   * `git config --add lfs.standalonetransferagent lfs-folder`
 * `git push origin master` will now copy any media to that folder
@@ -62,7 +62,7 @@ you want to either move to a folder, or replicate, it's a little more complicate
 
 * Create a new remote using `git remote add folderremote <url>`. Do this even if you want to keep the git repo at the same URL as currently.
 * Run these commands to configure the folder store:
-  * `git config --add lfs.customtransfer.lfs-folder.path lfs-folder`
+  * `git config --add lfs.customtransfer.lfs-folder.path lfs-folderstore`
   * `git config --add lfs.customtransfer.lfs-folder.args "C:/path/to/your/folder"`
   * `git config --add lfs.<url>.standalonetransferagent lfs-folder` - important: use the new Git repo URL
 * `git push folderremote master ...` - important: list all branches you wish to keep LFS content for. Only LFS content which is reachable from the branches you list (at any version) will be copied to the remote
@@ -81,7 +81,7 @@ when you clone fresh. Here's the sequence:
     * this will work for the git data, but will report "Error downloading object" when trying to get LFS data
 * `cd <folder>` - to enter your newly cloned repo
 * Configure as with a new repo:
-  * `git config --add lfs.customtransfer.lfs-folder.path lfs-folder`
+  * `git config --add lfs.customtransfer.lfs-folder.path lfs-folderstore`
   * `git config --add lfs.customtransfer.lfs-folder.args "C:/path/to/your/folder"`
   * `git config --add lfs.standalonetransferagent lfs-folder`
 * `git reset --hard master`
