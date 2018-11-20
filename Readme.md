@@ -42,8 +42,9 @@ with 2.5.2 and 2.6.0 (and with Git 2.19.1).
 
 You will need `lfs-folderstore[.exe]` to be on your system path somewhere.
 
-Either download the latest release, or build it from source using the standard
-`go build`.
+Either download and extract the [latest
+release](https://github.com/sinbad/lfs-folderstore/releases), or build it from
+source using the standard `go build`.
 
 ### Configure a fresh repo
 
