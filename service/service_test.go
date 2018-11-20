@@ -28,13 +28,13 @@ func TestStoragePath(t *testing.T) {
 		// platform-specific tests still run but use filepath.Join to make consistent
 		{
 			name: "Windows drive",
-			args: args{baseDir: `C:\Storage\Dir`, oid: "123456789abcdef"},
-			want: filepath.Join(`C:\Storage\Dir`, "12", "34", "123456789abcdef"),
+			args: args{baseDir: `C:/Storage/Dir`, oid: "123456789abcdef"},
+			want: filepath.Join(`C:/Storage/Dir`, "12", "34", "123456789abcdef"),
 		},
 		{
 			name: "Windows drive with space",
-			args: args{baseDir: `C:\Storage Path\Dir`, oid: "123456789abcdef"},
-			want: filepath.Join(`C:\Storage Path\Dir`, "12", "34", "123456789abcdef"),
+			args: args{baseDir: `C:/Storage Path/Dir`, oid: "123456789abcdef"},
+			want: filepath.Join(`C:/Storage Path/Dir`, "12", "34", "123456789abcdef"),
 		},
 		{
 			name: "Windows share",
@@ -43,8 +43,8 @@ func TestStoragePath(t *testing.T) {
 		},
 		{
 			name: "Windows trailing separator",
-			args: args{baseDir: `C:\Storage\Dir\`, oid: "123456789abcdef"},
-			want: filepath.Join(`C:\Storage\Dir`, "12", "34", "123456789abcdef"),
+			args: args{baseDir: `C:/Storage/Dir/`, oid: "123456789abcdef"},
+			want: filepath.Join(`C:/Storage/Dir`, "12", "34", "123456789abcdef"),
 		},
 		{
 			name: "Unix path",
