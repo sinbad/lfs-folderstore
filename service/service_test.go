@@ -341,7 +341,7 @@ func setupDownloadTest(t *testing.T) *testSetup {
 		oid := createTestFile(t, file.size, file.path)
 		// move these to final location
 		finalLocation := filepath.Join(storepath, oid[0:2], oid[2:4], oid)
-		assert.Nil(t, os.MkdirAll(filepath.Dir(finalLocation), 0644))
+		assert.Nil(t, os.MkdirAll(filepath.Dir(finalLocation), 0755))
 		assert.Nil(t, os.Rename(file.path, finalLocation))
 		// Must re-index since file is byval
 		testfiles[i].path = finalLocation
