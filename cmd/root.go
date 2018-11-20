@@ -87,7 +87,7 @@ Note:
 func rootCommand(cmd *cobra.Command, args []string) {
 
 	if printVersion {
-		os.Stderr.WriteString(fmt.Sprintf("lfs-folder %v", Version))
+		os.Stderr.WriteString(fmt.Sprintf("lfs-folder %v\n", Version))
 		os.Exit(0)
 	}
 	var baseDir string
