@@ -1,5 +1,10 @@
 # Git LFS: Shared Folder agent
 
+[![Build status][1]][2]
+
+[1]: https://travis-ci.org/sinbad/lfs-folderstore.svg?branch=master
+[2]: https://travis-ci.org/sinbad/lfs-folderstore
+
 ## What is it?
 
 `lfs-folderstore` is a [Custom Transfer
