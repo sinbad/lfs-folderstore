@@ -13,7 +13,7 @@ function Zip-Release {
     $zipargs = "a `"$tempdest`" $sourcedir\*"
 
     try {
-        7z a "$tempdest" "$sourcedir\*"
+        7z a "$tempdest" "$sourcedir\*" | Out-Null
     }
     catch {
         Remove-Item $tempdest -Force
@@ -63,15 +63,17 @@ foreach ($BuildOS in $BuildConfigs.GetEnumerator()) {
         Write-Output "- $($BuildOS.Name):$Arch"
 
         $outputdir = "$archivename-$($BuildOS.Name)-$Arch"
-        mkdir -Force $outputdir
-        Push-Location $outputdir | Out-Null
+        mkdir -Force $outputdir | Out-Null
+        Push-Location $outputdir
 
         env GOOS=$($BuildOS.Name) GOARCH=$Arch go build -ldflags "-X $package/cmd.Version=$Version" $package
 
-        Pop-Location | Out-Null
+        Pop-Location
 
-        Zip-Release $outputdir "$outputdir-$Version.zip"
+        $zipname = "$outputdir-$Version.zip"
+        Zip-Release $outputdir $zipname
         Remove-Item -Force -Recurse $outputdir
 
+        Write-Output "  Done: $zipname"
     }
 }
