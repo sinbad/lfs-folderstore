@@ -28,6 +28,11 @@ Dropbox, or Synology Cloud Drive etc.
 
 ## How to use
 
+### Prerequisites
+
+You need to be running Git LFS version 2.3.0 or later. This has been tested
+with 2.5.2 and 2.6.0 (and with Git 2.19.1).
+
 ### Download &amp; install
 
 You will need `lfs-folderstore[.exe]` to be on your system path somewhere.
