@@ -55,7 +55,6 @@ func Serve(baseDir string, stdin io.Reader, stdout, stderr io.Writer) {
 func storagePath(baseDir string, oid string) string {
 	// Use same folder split as lfs itself
 	fld := filepath.Join(baseDir, oid[0:2], oid[2:4])
-	os.MkdirAll(fld, os.ModePerm)
 	return filepath.Join(fld, oid)
 }
 
