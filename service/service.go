@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"syscall"
 
 	"github.com/sinbad/lfs-folderstore/api"
 	"github.com/sinbad/lfs-folderstore/util"
@@ -253,7 +250,7 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 }
 
 func gitDir() (string, error) {
-	cmd := newCmd("git", "rev-parse", "--git-dir")
+	cmd := util.NewCmd("git", "rev-parse", "--git-dir")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("Failed to call git rev-parse --git-dir: %v %v", err, string(out))
@@ -261,14 +258,6 @@ func gitDir() (string, error) {
 	path := strings.TrimSpace(string(out))
 	return absPath(path)
 
-}
-
-func newCmd(name string, arg ...string) *exec.Cmd {
-	cmd := exec.Command(name, arg...)
-	if runtime.GOOS == "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	}
-	return cmd
 }
 
 func absPath(path string) (string, error) {
