@@ -66,7 +66,9 @@ foreach ($BuildOS in $BuildConfigs.GetEnumerator()) {
         mkdir -Force $outputdir | Out-Null
         Push-Location $outputdir
 
-        env GOOS=$($BuildOS.Name) GOARCH=$Arch go build -ldflags "-X $package/cmd.Version=$Version" $package
+        $env:GOOS=$($BuildOS.Name)
+        $env:GOARCH=$Arch 
+        go build -ldflags "-X $package/cmd.Version=$Version" $package
 
         Pop-Location
 
