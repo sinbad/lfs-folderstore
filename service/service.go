@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
+	"syscall"
 
 	"github.com/sinbad/lfs-folderstore/api"
 	"github.com/sinbad/lfs-folderstore/util"
@@ -19,6 +22,12 @@ func Serve(baseDir string, stdin io.Reader, stdout, stderr io.Writer) {
 	scanner := bufio.NewScanner(stdin)
 	writer := bufio.NewWriter(stdout)
 	errWriter := bufio.NewWriter(stderr)
+
+	gitDir, err := gitDir()
+	if err != nil {
+		util.WriteToStderr(fmt.Sprintf("Unable to retrieve git dir: %v\n", err), errWriter)
+		return
+	}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -40,7 +49,7 @@ func Serve(baseDir string, stdin io.Reader, stdout, stderr io.Writer) {
 			api.SendResponse(resp, writer, errWriter)
 		case "download":
 			util.WriteToStderr(fmt.Sprintf("Received download request for %s\n", req.Oid), errWriter)
-			retrieve(baseDir, req.Oid, req.Size, req.Action, writer, errWriter)
+			retrieve(baseDir, gitDir, req.Oid, req.Size, req.Action, writer, errWriter)
 		case "upload":
 			util.WriteToStderr(fmt.Sprintf("Received upload request for %s\n", req.Oid), errWriter)
 			store(baseDir, req.Oid, req.Size, req.Action, req.Path, writer, errWriter)
@@ -58,7 +67,16 @@ func storagePath(baseDir string, oid string) string {
 	return filepath.Join(fld, oid)
 }
 
-func retrieve(baseDir string, oid string, size int64, a *api.Action, writer, errWriter *bufio.Writer) {
+func downloadTempPath(gitDir string, oid string) string {
+	// Download to a subfolder of repo so that git-lfs's final rename can work
+	// It won't work if TEMP is on another drive otherwise
+	// basedir is the objects/ folder, so use the tmp folder
+	tmpfld := filepath.Join(gitDir, "lfs", "tmp")
+	os.MkdirAll(tmpfld, os.ModePerm)
+	return filepath.Join(tmpfld, fmt.Sprintf("%v.tmp", oid))
+}
+
+func retrieve(baseDir, gitDir, oid string, size int64, a *api.Action, writer, errWriter *bufio.Writer) {
 
 	// We just use a shared DB of objects stored by OID across all repos
 	// If user wants to separate, can just use a different folder
@@ -75,13 +93,14 @@ func retrieve(baseDir string, oid string, size int64, a *api.Action, writer, err
 	}
 
 	// Copy to temp, since LFS will rename this to final location
-	dlFile, err := ioutil.TempFile("", "lfsfolderstore")
+	// Use git dir as base to ensure final path is on same drive for LFS move
+	dlfilename := downloadTempPath(gitDir, oid)
+	dlFile, err := os.OpenFile(dlfilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_EXCL, 0644)
 	if err != nil {
 		api.SendTransferError(oid, 5, fmt.Sprintf("Error creating temp file for %q: %v", filePath, err), writer, errWriter)
 		return
 	}
 	defer dlFile.Close()
-	dlfilename := dlFile.Name()
 
 	f, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
 	if err != nil {
@@ -231,4 +250,34 @@ func store(baseDir string, oid string, size int64, a *api.Action, fromPath strin
 		util.WriteToStderr(fmt.Sprintf("Unable to send completion message: %v\n", err), errWriter)
 	}
 
+}
+
+func gitDir() (string, error) {
+	cmd := newCmd("git", "rev-parse", "--git-dir")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("Failed to call git rev-parse --git-dir: %v %v", err, string(out))
+	}
+	path := strings.TrimSpace(string(out))
+	return absPath(path)
+
+}
+
+func newCmd(name string, arg ...string) *exec.Cmd {
+	cmd := exec.Command(name, arg...)
+	if runtime.GOOS == "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	}
+	return cmd
+}
+
+func absPath(path string) (string, error) {
+	if len(path) > 0 {
+		path, err := filepath.Abs(path)
+		if err != nil {
+			return "", err
+		}
+		return filepath.EvalSymlinks(path)
+	}
+	return "", nil
 }
