@@ -62,6 +62,8 @@ Starting a new repository is the easiest case.
 A few things to note:
 
 * As shown, if on Windows, use forward slashes for path separators
+* If you have spaces in your path, add **additional single quotes** around the path
+    * e.g. `git config --add lfs.customtransfer.lfs-folder.args "'C:/path with spaces/folder'"`
 * The `standalonetransferagent` forced Git LFS to use the folder agent for all
   pushes and pulls. If you want to use another remote which uses the standard
   LFS API, you should see the next section.
