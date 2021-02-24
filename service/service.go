@@ -92,7 +92,7 @@ func retrieve(baseDir, gitDir, oid string, size int64, a *api.Action, writer, er
 	// Copy to temp, since LFS will rename this to final location
 	// Use git dir as base to ensure final path is on same drive for LFS move
 	dlfilename := downloadTempPath(gitDir, oid)
-	dlFile, err := os.OpenFile(dlfilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_EXCL, 0644)
+	dlFile, err := os.OpenFile(dlfilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		api.SendTransferError(oid, 5, fmt.Sprintf("Error creating temp file for %q: %v", filePath, err), writer, errWriter)
 		return
