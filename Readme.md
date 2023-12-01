@@ -1,5 +1,8 @@
 # Git LFS: Shared Folder agent
 
+> **No longer maintained**
+> Feel free to fork this repo if you like!
+
 [![Build status][1]][2]
 
 [1]: https://travis-ci.org/sinbad/lfs-folderstore.svg?branch=master
